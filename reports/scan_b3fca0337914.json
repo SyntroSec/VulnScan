@@ -1,0 +1,162 @@
+{
+  "session_id": "b3fca0337914",
+  "started_at": "2026-11-06T20:26:49.307462+00:00",
+  "finished_at": "2026-11-06T20:26:56.875712+00:00",
+  "targets": [
+    "127.0.0.1"
+  ],
+  "hosts": [
+    {
+      "host": "127.0.0.1",
+      "alive": true,
+      "hostname": null,
+      "open_ports": [
+        {
+          "port": 80,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "http",
+          "banner": "HTTP/1.1 200 OK\nServer: Microsoft-IIS/10.0\nX-Powered-By: ASP.NET",
+          "latency_ms": 1.03
+        },
+        {
+          "port": 135,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "msrpc",
+          "banner": null,
+          "latency_ms": 0.74
+        },
+        {
+          "port": 445,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "smb",
+          "banner": null,
+          "latency_ms": 0.48
+        }
+      ],
+      "scanned_at": "2026-11-06T20:26:49.315546+00:00",
+      "errors": []
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "PLUGIN-HTTP-VERSION-DISCLOSURE",
+      "title": "Web Server Version Disclosure",
+      "severity": "Medium",
+      "host": "127.0.0.1",
+      "description": "HTTP headers disclose web server or framework technology details.",
+      "evidence": "Server: Microsoft-IIS/10.0\nX-Powered-By: ASP.NET",
+      "remediation": "Suppress Server and X-Powered-By headers at the edge proxy.",
+      "plugin_id": "http_default_headers",
+      "port": 80,
+      "protocol": "tcp",
+      "cve_ids": [],
+      "references": [],
+      "metadata": {},
+      "detected_at": "2026-11-06T20:26:56.875171+00:00"
+    },
+    {
+      "finding_id": "SIG-HTTP-SERVER-HEADER",
+      "title": "HTTP Server Header Disclosure",
+      "severity": "Medium",
+      "host": "127.0.0.1",
+      "description": "The HTTP response discloses a Server header that reveals the web server product and often a version string. Attackers use this for targeted exploit selection.",
+      "evidence": "HTTP/1.1 200 OK\nServer: Microsoft-IIS/10.0\nX-Powered-By: ASP.NET",
+      "remediation": "Remove or obfuscate the Server header at the reverse proxy or application layer. Prefer a generic value and keep components patched.",
+      "plugin_id": "signature_rules",
+      "port": 80,
+      "protocol": "tcp",
+      "cve_ids": [],
+      "references": [
+        "https://owasp.org/www-project-secure-headers/"
+      ],
+      "metadata": {
+        "rule_id": "SIG-HTTP-SERVER-HEADER",
+        "service": "http"
+      },
+      "detected_at": "2026-11-06T20:26:56.875298+00:00"
+    },
+    {
+      "finding_id": "PLUGIN-HTTP-MISSING-HEADERS-CLEARTEXT",
+      "title": "Missing HTTP Security Headers (Cleartext)",
+      "severity": "Low",
+      "host": "127.0.0.1",
+      "description": "Cleartext HTTP is missing framing/MIME-sniffing protections. Prefer redirecting clients to HTTPS.",
+      "evidence": "Missing: (?i)x-content-type-options:, (?i)x-frame-options:, (?i)content-security-policy:\nHTTP/1.1 200 OK\nServer: Microsoft-IIS/10.0\nX-Powered-By: ASP.NET",
+      "remediation": "Terminate TLS and emit a full secure header set.",
+      "plugin_id": "http_default_headers",
+      "port": 80,
+      "protocol": "tcp",
+      "cve_ids": [],
+      "references": [],
+      "metadata": {},
+      "detected_at": "2026-11-06T20:26:56.875072+00:00"
+    },
+    {
+      "finding_id": "SIG-HTTP-MISSING-SECURITY-HEADERS",
+      "title": "Missing Common HTTP Security Headers",
+      "severity": "Low",
+      "host": "127.0.0.1",
+      "description": "One or more widely recommended HTTP security headers were not observed in the response. Missing headers increase risk of clickjacking, MIME sniffing, and related client-side attacks.",
+      "evidence": "HTTP/1.1 200 OK\nServer: Microsoft-IIS/10.0\nX-Powered-By: ASP.NET\nMissing patterns: (?i)strict-transport-security:, (?i)x-content-type-options:, (?i)x-frame-options:, (?i)content-security-policy:",
+      "remediation": "Configure the web server or reverse proxy to emit HSTS (HTTPS only), X-Content-Type-Options, X-Frame-Options (or CSP frame-ancestors), and a Content-Security-Policy appropriate for the application.",
+      "plugin_id": "signature_rules",
+      "port": 80,
+      "protocol": "tcp",
+      "cve_ids": [],
+      "references": [
+        "https://owasp.org/www-project-secure-headers/"
+      ],
+      "metadata": {
+        "rule_id": "SIG-HTTP-MISSING-SECURITY-HEADERS",
+        "service": "http"
+      },
+      "detected_at": "2026-11-06T20:26:56.875458+00:00"
+    },
+    {
+      "finding_id": "PLUGIN-SMB-EXPOSED-INFO",
+      "title": "SMB Service Reachable",
+      "severity": "Info",
+      "host": "127.0.0.1",
+      "description": "SMB is reachable; SMBv1 capability was not confirmed from the banner.",
+      "evidence": "SMB open without SMBv1 marker",
+      "remediation": "Ensure SMBv1 is disabled and access is network-restricted.",
+      "plugin_id": "smb_v1_status",
+      "port": 445,
+      "protocol": "tcp",
+      "cve_ids": [],
+      "references": [],
+      "metadata": {},
+      "detected_at": "2026-11-06T20:26:56.874907+00:00"
+    }
+  ],
+  "errors": [],
+  "metadata": {
+    "tcp_ports": [
+      22,
+      80,
+      135,
+      445
+    ],
+    "udp_ports": [],
+    "concurrency": 40,
+    "source": "web_dashboard",
+    "grab_banners": true,
+    "run_plugins": true
+  },
+  "summary": {
+    "hosts_alive": 1,
+    "hosts_total": 1,
+    "open_ports": 3,
+    "findings_total": 5,
+    "by_severity": {
+      "Critical": 0,
+      "High": 0,
+      "Medium": 2,
+      "Low": 2,
+      "Info": 1
+    }
+  }
+}

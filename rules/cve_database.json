@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "description": "Local CVE/ruleset used by the credentialed SSH compliance auditor. Package names are matched against installed dpkg/rpm packages; version comparison uses PEP 440-style loose numeric comparison.",
+  "rules": [
+    {
+      "id": "CVE-LOCAL-OPENSSL-OLD",
+      "cve_ids": ["CVE-2022-0778", "CVE-2023-0286"],
+      "title": "Outdated OpenSSL package",
+      "severity": "High",
+      "package_names": ["openssl", "libssl1.1", "libssl3"],
+      "vulnerable_below": "3.0.8",
+      "description": "Installed OpenSSL-related packages appear older than the local remediation baseline.",
+      "remediation": "Upgrade OpenSSL / libssl packages to a vendor-supported release at or above the baseline.",
+      "references": [
+        "https://nvd.nist.gov/vuln/detail/CVE-2022-0778",
+        "https://nvd.nist.gov/vuln/detail/CVE-2023-0286"
+      ]
+    },
+    {
+      "id": "CVE-LOCAL-OPENSSH-OLD",
+      "cve_ids": ["CVE-2023-38408", "CVE-2024-6387"],
+      "title": "Outdated OpenSSH server package",
+      "severity": "Critical",
+      "package_names": ["openssh-server", "openssh"],
+      "vulnerable_below": "9.6p1",
+      "description": "OpenSSH server package is below the local secure baseline and may be affected by known remote issues.",
+      "remediation": "Upgrade openssh-server to a patched vendor release and restart sshd after validation.",
+      "references": [
+        "https://nvd.nist.gov/vuln/detail/CVE-2023-38408",
+        "https://nvd.nist.gov/vuln/detail/CVE-2024-6387"
+      ]
+    },
+    {
+      "id": "CVE-LOCAL-SUDO-OLD",
+      "cve_ids": ["CVE-2021-3156", "CVE-2023-22809"],
+      "title": "Outdated sudo package",
+      "severity": "High",
+      "package_names": ["sudo"],
+      "vulnerable_below": "1.9.13",
+      "description": "sudo is below the local remediation baseline associated with privilege-escalation class issues.",
+      "remediation": "Upgrade sudo via the distribution package manager and verify sudoers policy least privilege.",
+      "references": [
+        "https://nvd.nist.gov/vuln/detail/CVE-2021-3156",
+        "https://nvd.nist.gov/vuln/detail/CVE-2023-22809"
+      ]
+    },
+    {
+      "id": "CVE-LOCAL-CURL-OLD",
+      "cve_ids": ["CVE-2023-38545"],
+      "title": "Outdated curl / libcurl package",
+      "severity": "Medium",
+      "package_names": ["curl", "libcurl3", "libcurl4", "libcurl3-gnutls"],
+      "vulnerable_below": "8.4.0",
+      "description": "curl/libcurl packages are older than the local baseline covering heap overflow class defects in SOCKS5 handling.",
+      "remediation": "Upgrade curl and libcurl packages to a patched release.",
+      "references": ["https://nvd.nist.gov/vuln/detail/CVE-2023-38545"]
+    },
+    {
+      "id": "CVE-LOCAL-KERNEL-OLD",
+      "cve_ids": ["CVE-2024-1086"],
+      "title": "Linux kernel package below baseline",
+      "severity": "Critical",
+      "package_names": ["linux-image", "kernel", "kernel-core"],
+      "vulnerable_below": "6.1.0",
+      "package_name_prefix": true,
+      "description": "Installed kernel packages appear below the configured local baseline. Confirm with vendor advisories for the exact distribution kernel.",
+      "remediation": "Apply distribution kernel security updates and reboot into the patched kernel.",
+      "references": ["https://nvd.nist.gov/vuln/detail/CVE-2024-1086"]
+    },
+    {
+      "id": "CVE-LOCAL-PYTHON3-OLD",
+      "cve_ids": ["CVE-2023-24329"],
+      "title": "Outdated Python 3 runtime package",
+      "severity": "Medium",
+      "package_names": ["python3", "python3.10", "python3.11", "python3.12"],
+      "vulnerable_below": "3.11.5",
+      "description": "Python 3 packages are below the local remediation baseline.",
+      "remediation": "Upgrade Python packages through the OS vendor repositories or managed runtimes.",
+      "references": ["https://nvd.nist.gov/vuln/detail/CVE-2023-24329"]
+    }
+  ]
+}

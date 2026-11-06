@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ app_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            sans: ['Outfit', 'sans-serif'],
+            mono: ['IBM Plex Mono', 'monospace'],
+          },
+          colors: {
+            ink: {
+              950: '#070b10',
+              900: '#0c1219',
+              800: '#121a24',
+              700: '#1a2533',
+              600: '#243142',
+            },
+            mint: {
+              300: '#7dfff0',
+              400: '#3ee6d4',
+              500: '#1fb8a8',
+            },
+            ember: {
+              400: '#ffb45c',
+              500: '#f08a2c',
+            },
+          },
+          boxShadow: {
+            panel: '0 20px 50px rgba(0,0,0,0.35)',
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="/static/app.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-ink-950 text-slate-200 font-sans antialiased min-h-screen">
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+    <header class="mb-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="font-mono text-xs tracking-[0.25em] uppercase text-mint-400/80 mb-2">Local Assessment Console</p>
+        <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-none">
+          VulnScan
+        </h1>
+        <p class="mt-3 max-w-xl text-slate-400 text-base sm:text-lg">
+          Launch network scans, watch live progress, and triage findings with severity-ranked evidence.
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="healthBadge" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-ink-800/80 px-3 py-1.5 text-xs font-mono text-slate-300">
+          <span class="h-2 w-2 rounded-full bg-slate-500" id="healthDot"></span>
+          <span id="healthText">API</span>
+        </span>
+        <button id="refreshScansBtn" type="button" class="rounded-lg border border-white/10 bg-ink-800 px-3 py-1.5 text-sm text-slate-200 hover:border-mint-400/40 hover:text-white transition">
+          Refresh
+        </button>
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
+      <!-- Launch panel -->
+      <section class="xl:col-span-4 panel p-5 sm:p-6">
+        <h2 class="font-display text-xl font-bold text-white mb-1">New Scan</h2>
+        <p class="text-sm text-slate-400 mb-5">Authorized targets only. CIDR ranges capped at 1024 hosts.</p>
+
+        <form id="scanForm" class="space-y-4">
+          <div>
+            <label for="targets" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Target IP / Subnet</label>
+            <textarea id="targets" name="targets" rows="3" required
+              placeholder="127.0.0.1&#10;192.168.1.0/24"
+              class="field font-mono text-sm"></textarea>
+          </div>
+
+          <div>
+            <label for="portPreset" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Port Range</label>
+            <select id="portPreset" class="field text-sm mb-2">
+              <option value="common">Common ports (default)</option>
+              <option value="web">Web (80,443,8080,8443)</option>
+              <option value="remote">Remote access (22,3389,5900)</option>
+              <option value="fulltop">Top services mix</option>
+              <option value="custom">Custom…</option>
+            </select>
+            <input id="ports" name="ports" type="text" placeholder="22,80,443 or 1-1024"
+              class="field font-mono text-sm hidden" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="concurrency" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Concurrency</label>
+              <input id="concurrency" type="number" min="1" max="2000" value="100" class="field font-mono text-sm" />
+            </div>
+            <div>
+              <label for="timeout" class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">Timeout (s)</label>
+              <input id="timeout" type="number" min="0.2" max="30" step="0.1" value="1.5" class="field font-mono text-sm" />
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2 text-sm text-slate-300">
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+              <input id="grabBanners" type="checkbox" checked class="accent-mint-500" />
+              Grab service banners
+            </label>
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+              <input id="runPlugins" type="checkbox" checked class="accent-mint-500" />
+              Run vulnerability plugins
+            </label>
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+              <input id="skipDiscovery" type="checkbox" class="accent-mint-500" />
+              Skip host discovery
+            </label>
+          </div>
+
+          <button id="startBtn" type="submit"
+            class="w-full rounded-xl bg-mint-500 hover:bg-mint-400 text-ink-950 font-semibold py-3 transition shadow-lg shadow-mint-500/10 disabled:opacity-50 disabled:cursor-not-allowed">
+            Start Scan
+          </button>
+          <p id="formError" class="text-sm text-rose-400 hidden"></p>
+        </form>
+      </section>
+
+      <!-- Live metrics -->
+      <section class="xl:col-span-8 space-y-6">
+        <div class="panel p-5 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div>
+              <h2 class="font-display text-xl font-bold text-white">Active Scan</h2>
+              <p id="activeScanMeta" class="text-sm text-slate-400 mt-1">No scan selected</p>
+            </div>
+            <span id="statusPill" class="status-pill status-idle">Idle</span>
+          </div>
+
+          <div class="mb-2 flex items-center justify-between text-xs font-mono text-slate-400">
+            <span id="phaseLabel">Waiting</span>
+            <span id="progressLabel">0%</span>
+          </div>
+          <div class="h-3 rounded-full bg-ink-700 overflow-hidden border border-white/5">
+            <div id="progressBar" class="h-full w-0 bg-gradient-to-r from-mint-500 to-ember-400 transition-all duration-500"></div>
+          </div>
+          <p id="progressMessage" class="mt-3 text-sm text-slate-300">Launch a scan to stream live progress over SSE.</p>
+
+          <div class="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="metric">
+              <p class="metric-label">Alive</p>
+              <p id="metricAlive" class="metric-value">0</p>
+            </div>
+            <div class="metric">
+              <p class="metric-label">Open Ports</p>
+              <p id="metricPorts" class="metric-value">0</p>
+            </div>
+            <div class="metric">
+              <p class="metric-label">Findings</p>
+              <p id="metricFindings" class="metric-value">0</p>
+            </div>
+            <div class="metric">
+              <p class="metric-label">Critical+High</p>
+              <p id="metricHot" class="metric-value text-ember-400">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="panel p-5">
+            <h3 class="font-display text-lg font-bold text-white mb-3">Severity</h3>
+            <div class="chart-wrap">
+              <canvas id="severityPie"></canvas>
+            </div>
+          </div>
+          <div class="panel p-5">
+            <h3 class="font-display text-lg font-bold text-white mb-3">Host Status</h3>
+            <div class="chart-wrap">
+              <canvas id="severityBar"></canvas>
+            </div>
+            <ul id="hostStatusList" class="mt-4 max-h-40 overflow-auto space-y-1.5 text-sm font-mono"></ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- History + findings -->
+    <section class="mt-8 grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
+      <div class="xl:col-span-4 panel p-5 sm:p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-display text-xl font-bold text-white">Scan History</h2>
+          <span id="scanCount" class="text-xs font-mono text-slate-400">0</span>
+        </div>
+        <div id="scanList" class="space-y-2 max-h-[28rem] overflow-auto pr-1"></div>
+      </div>
+
+      <div class="xl:col-span-8 panel p-5 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h2 class="font-display text-xl font-bold text-white">Findings</h2>
+          <div class="flex flex-wrap gap-2" id="severityFilters">
+            <button type="button" data-sev="all" class="filter-chip active">All</button>
+            <button type="button" data-sev="Critical" class="filter-chip">Critical</button>
+            <button type="button" data-sev="High" class="filter-chip">High</button>
+            <button type="button" data-sev="Medium" class="filter-chip">Medium</button>
+            <button type="button" data-sev="Low" class="filter-chip">Low</button>
+            <button type="button" data-sev="Info" class="filter-chip">Info</button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm" id="findingsTable">
+            <thead>
+              <tr class="text-xs font-mono uppercase tracking-wider text-slate-500 border-b border-white/10">
+                <th class="py-2 pr-3 font-medium">Severity</th>
+                <th class="py-2 pr-3 font-medium">Title</th>
+                <th class="py-2 pr-3 font-medium">Host</th>
+                <th class="py-2 pr-3 font-medium">Plugin</th>
+                <th class="py-2 font-medium w-8"></th>
+              </tr>
+            </thead>
+            <tbody id="findingsBody"></tbody>
+          </table>
+          <p id="findingsEmpty" class="text-slate-500 text-sm py-8 text-center">Select a scan to inspect findings.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-8 panel p-5 sm:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display text-xl font-bold text-white">Loaded Plugins</h2>
+        <button id="reloadPluginsBtn" type="button" class="text-sm text-mint-400 hover:text-mint-300">Reload</button>
+      </div>
+      <div id="pluginsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+    </section>
+
+    <footer class="mt-10 pb-6 text-center text-xs font-mono text-slate-500">
+      VulnScan Console · authorized assessments only · SSE live progress · FastAPI backend
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

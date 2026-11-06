@@ -1,0 +1,140 @@
+# Banner / service signature rules evaluated by the plugin engine.
+# Each rule is matched against discovered host/port/service/banner tuples.
+
+version: 1
+rules:
+  - id: SIG-HTTP-SERVER-HEADER
+    title: "HTTP Server Header Disclosure"
+    severity: Medium
+    match:
+      services: [http, https]
+      ports: [80, 443, 8080, 8443]
+      banner_regex: "(?i)server:\\s*(Apache|nginx|Microsoft-IIS|lighttpd|Caddy)[/\\s]"
+    description: >
+      The HTTP response discloses a Server header that reveals the web server
+      product and often a version string. Attackers use this for targeted exploit
+      selection.
+    remediation: >
+      Remove or obfuscate the Server header at the reverse proxy or application
+      layer. Prefer a generic value and keep components patched.
+    references:
+      - "https://owasp.org/www-project-secure-headers/"
+
+  - id: SIG-HTTP-MISSING-SECURITY-HEADERS
+    title: "Missing Common HTTP Security Headers"
+    severity: Low
+    match:
+      services: [http, https]
+      ports: [80, 443, 8080, 8443]
+      banner_regex: "(?i)HTTP/1\\.[01]\\s+\\d{3}"
+      banner_missing_regex:
+        - "(?i)strict-transport-security:"
+        - "(?i)x-content-type-options:"
+        - "(?i)x-frame-options:"
+        - "(?i)content-security-policy:"
+    description: >
+      One or more widely recommended HTTP security headers were not observed in
+      the response. Missing headers increase risk of clickjacking, MIME sniffing,
+      and related client-side attacks.
+    remediation: >
+      Configure the web server or reverse proxy to emit HSTS (HTTPS only),
+      X-Content-Type-Options, X-Frame-Options (or CSP frame-ancestors), and a
+      Content-Security-Policy appropriate for the application.
+    references:
+      - "https://owasp.org/www-project-secure-headers/"
+
+  - id: SIG-FTP-ANONYMOUS-BANNER
+    title: "FTP Service Banner Suggests Anonymous Access"
+    severity: High
+    match:
+      services: [ftp]
+      ports: [21]
+      banner_regex: "(?i)(anonymous|login\\s+successful|230\\s)"
+    description: >
+      The FTP banner or greeting indicates anonymous or unauthenticated access
+      may be permitted, which frequently exposes sensitive files.
+    remediation: >
+      Disable anonymous FTP. Require authenticated users with least privilege and
+      prefer SFTP/FTPS over cleartext FTP.
+    references:
+      - "https://www.cisa.gov/news-events/alerts"
+
+  - id: SIG-SSH-OLD-PROTOCOL
+    title: "SSH Banner Indicates Legacy Protocol/Software"
+    severity: Medium
+    match:
+      services: [ssh]
+      ports: [22]
+      banner_regex: "(?i)SSH-1\\.|OpenSSH_[1-6]\\."
+    description: >
+      The SSH banner advertises a legacy protocol version or an older OpenSSH
+      release that may lack modern cryptography and security fixes.
+    remediation: >
+      Upgrade OpenSSH to a supported release, disable SSH protocol 1, and harden
+      cipher/MAC/KEX algorithms per current guidance.
+    references:
+      - "https://www.openssh.com/security.html"
+
+  - id: SIG-SMB-SERVICE-EXPOSED
+    title: "SMB Service Exposed on Network"
+    severity: Medium
+    match:
+      services: [smb]
+      ports: [445, 139]
+      banner_regex: "(?i)(SMB|samba|microsoft)"
+    description: >
+      Server Message Block (SMB) is reachable from the scanned network segment.
+      Exposed SMB increases lateral-movement and ransomware risk if poorly hardened.
+    remediation: >
+      Restrict SMB to trusted management networks, disable SMBv1, require signing,
+      and ensure systems are fully patched.
+    references:
+      - "https://www.microsoft.com/en-us/security/blog/"
+
+  - id: SIG-RDP-EXPOSED
+    title: "Remote Desktop (RDP) Service Exposed"
+    severity: High
+    match:
+      services: [rdp]
+      ports: [3389]
+      banner_regex: "(?i)(rdp|terminal\\s*services|credssp|x\\.224)"
+    description: >
+      Microsoft Remote Desktop Protocol appears exposed. Internet-facing or
+      broadly reachable RDP is a frequent brute-force and exploit target.
+    remediation: >
+      Place RDP behind VPN or zero-trust access, enforce MFA/NLA, restrict source
+      IPs, and keep the host patched.
+    references:
+      - "https://www.cisa.gov/news-events/cybersecurity-advisories"
+
+  - id: SIG-MGMT-INTERFACE-EXPOSED
+    title: "Likely Management / Admin Interface Exposed"
+    severity: High
+    match:
+      services: [http, https]
+      ports: [8080, 8443, 9090, 10000, 8834, 9443]
+      banner_regex: "(?i)(admin|dashboard|manager|phpmyadmin|tomcat|jenkins|nessus|grafana|prometheus)"
+    description: >
+      An HTTP service on a common management port returned content suggestive of
+      an administrative console. Exposed management UIs are high-value targets.
+    remediation: >
+      Bind management interfaces to localhost or a dedicated management VLAN,
+      require strong authentication/MFA, and restrict access by firewall policy.
+    references:
+      - "https://www.cisa.gov/news-events/cybersecurity-advisories"
+
+  - id: SIG-TELNET-CLEARTEXT
+    title: "Cleartext Telnet Service Detected"
+    severity: Critical
+    match:
+      services: [telnet]
+      ports: [23]
+      banner_regex: "(?i)(telnet|login:|username:)"
+    description: >
+      A Telnet service was identified. Credentials and session data traverse the
+      network in cleartext and are trivially intercepted.
+    remediation: >
+      Disable Telnet and migrate operators to SSH or another encrypted remote
+      access mechanism.
+    references:
+      - "https://www.cisa.gov/news-events/alerts"
